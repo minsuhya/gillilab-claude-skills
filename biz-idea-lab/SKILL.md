@@ -6,7 +6,7 @@ description: >
   Scout 모드(정보 수집→패턴→아이디어 30개+→백로그)와
   Deep 모드(TOP5 선정→BMC→로드맵→액션 플랜)를 지원한다.
   "스타트업 아이디어", "사업 아이디어", "비즈니스 아이디어", "창업 아이디어",
-  "비즈니스 모델", "사업 기획", "트렌드 조사", "아이디어 발굴", "핫 스타트업",
+  "비즈니스 모델 만들기", "비즈니스 모델 설계", "사업 기획", "트렌드 조사", "아이디어 발굴", "핫 스타트업",
   "인기 앱", "startup idea", "business idea", "idea scout", "아이디어 스카우트",
   "business model" 등의 키워드로 트리거.
 ---
@@ -44,8 +44,6 @@ AskUserQuestion으로 모드와 컨텍스트를 수집한다:
 
 정보 원천 상세: [references/global-sources.md](references/global-sources.md), [references/korea-sources.md](references/korea-sources.md)
 
-웹 검색 불가 시 학습 데이터 기반 분석을 사용하고 `[추정: {근거}]` 태그를 붙인다.
-
 ## Phase 2: 패턴 인식 → 아이디어 생성
 
 ### 패턴 추출 (`02-patterns/pattern-analysis.md`)
@@ -60,6 +58,8 @@ AskUserQuestion으로 모드와 컨텍스트를 수집한다:
 3. **Copy → Localize**: 해외 성공 모델 한국 현지화
 4. **Vertical → Horizontal**: 산업 특화 → 범용 플랫폼
 5. **Offline → Online**: 오프라인 프로세스 디지털화
+
+30개 미달 시 5가지 렌즈를 추가 적용하거나 관심 도메인 범위를 확장한 후 재도출한다.
 
 백로그 템플릿: [references/idea-backlog-template.md](references/idea-backlog-template.md)
 
@@ -110,6 +110,7 @@ BMC 템플릿: [references/bmc-template.md](references/bmc-template.md)
 ## 출력 디렉터리
 
 출력 디렉터리는 사용자 지정 경로 또는 현재 작업 디렉터리에 생성한다.
+출력 디렉터리가 이미 존재하는 경우 사용자에게 덮어쓰기 여부를 확인한다.
 
 ```
 biz-idea-lab/
@@ -126,6 +127,7 @@ biz-idea-lab/
 ## 사용자 확인 포인트
 
 - Phase 1 완료: "리서치 완성. 아이디어 발굴로 진행할까요?"
+- Phase 2 완료: "패턴 분석 완성. 아이디어 30개+ 생성으로 진행할까요?"
 - Phase 3 완료: "TOP3 추천: {A}, {B}, {C}. BMC 생성 진행할까요?"
 - Phase 4 완료: "BMC 완성. 실행 로드맵 작성 진행할까요?"
 
@@ -133,7 +135,13 @@ biz-idea-lab/
 
 확정 아이디어 → `/project-builder`로 서비스 문서화 및 앱 구현 진행
 
-## 주의사항
+## 웹 검색 환경 처리
 
-- 웹 검색 불가 시 `[추정]` 태그와 근거를 함께 기술한다
-- 검증 필요 항목에는 `[실시간 검증 필요]` 태그를 사용한다
+| 환경 | 처리 방식 |
+|------|---------|
+| 웹 검색 가능 | 실시간 데이터 우선, 최신 3-6개월 기준 |
+| 웹 검색 불가 | 학습 데이터 기반 분석 (2024-2025년 데이터) |
+
+- 웹 검색 불가 시 모든 수치에 `[추정: {근거}]` 태그를 붙인다
+- 실시간 검증이 필요한 항목에는 `[실시간 검증 필요]` 태그를 사용한다
+- 사용자에게 웹 검색 가능 환경 구성을 권장한다
