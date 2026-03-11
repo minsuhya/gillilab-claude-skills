@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+import json
+import shutil
+import sys
+from datetime import datetime
+from pathlib import Path
+
+
+HOME = Path.home()
+FILES = {
+    "opencode": HOME / ".config/opencode/opencode.json",
+    "omop": HOME / ".config/opencode/oh-my-opencode.json",
+    "claude": HOME / ".claude/settings.json",
+}
+
+
+PROFILES = {
+    "fast": {
+        "opencode_reasoning": "low",
+        "always_thinking": False,
+        "categories": {
+            "quick": "low",
+            "unspecified-low": "low",
+            "unspecified-high": "medium",
+            "ultrabrain": "high",
+        },
+        "agents": {
+            "plan": "medium",
+            "hephaestus": "medium",
+            "oracle": "high",
+            "librarian": "low",
+        },
+    },
+    "balanced": {
+        "opencode_reasoning": "low",
+        "always_thinking": False,
+        "categories": {
+            "quick": "low",
+            "unspecified-low": "medium",
+            "unspecified-high": "high",
+            "ultrabrain": "xhigh",
+        },
+        "agents": {
+            "plan": "high",
+            "hephaestus": "high",
+            "oracle": "xhigh",
+            "librarian": "low",
+        },
+    },
+    "deep": {
+        "opencode_reasoning": "high",
+        "always_thinking": True,
+        "categories": {
+            "quick": "medium",
+            "unspecified-low": "high",
+            "unspecified-high": "xhigh",
+            "ultrabrain": "xhigh",
+        },
+        "agents": {
+            "plan": "xhigh",
+            "hephaestus": "xhigh",
+            "oracle": "xhigh",
+            "librarian": "medium",
+        },
+    },
+}
+
+
+def load_json(path: Path):
+    with path.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def dump_json(path: Path, data):
+    with path.open("w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+
+def backup(path: Path, tag: str):
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    dst = path.with_suffix(path.suffix + f".bak.{tag}-{ts}")
+    shutil.copy2(path, dst)
+    return dst
+
+
+def set_nested(obj, keys, value):
+    cur = obj
+    for k in keys[:-1]:
+        if k not in cur or not isinstance(cur[k], dict):
+            return False
+        cur = cur[k]
+    if keys[-1] not in cur:
+        return False
+    cur[keys[-1]] = value
+    return True
+
+
+def main():
+    if len(sys.argv) != 2 or sys.argv[1] not in PROFILES:
+        profiles = ", ".join(sorted(PROFILES.keys()))
+        print(f"Usage: {Path(sys.argv[0]).name} <{profiles}>")
+        return 2
+
+    profile_name = sys.argv[1]
+    profile = PROFILES[profile_name]
+
+    for path in FILES.values():
+        if not path.exists():
+            print(f"[error] Missing file: {path}")
+            return 1
+
+    opencode = load_json(FILES["opencode"])
+    omop = load_json(FILES["omop"])
+    claude = load_json(FILES["claude"])
+
+    b1 = backup(FILES["opencode"], profile_name)
+    b2 = backup(FILES["omop"], profile_name)
+    b3 = backup(FILES["claude"], profile_name)
+
+    ok = set_nested(opencode, ["provider", "openai", "options", "reasoningEffort"], profile["opencode_reasoning"])
+    if not ok:
+        print("[warn] Could not set opencode reasoningEffort (path missing)")
+
+    if "alwaysThinkingEnabled" in claude:
+        claude["alwaysThinkingEnabled"] = profile["always_thinking"]
+    else:
+        print("[warn] Could not set claude alwaysThinkingEnabled (key missing)")
+
+    categories = omop.get("categories", {})
+    for name, variant in profile["categories"].items():
+        if name in categories and isinstance(categories[name], dict) and "variant" in categories[name]:
+            categories[name]["variant"] = variant
+        else:
+            print(f"[warn] category '{name}' missing variant key")
+
+    agents = omop.get("agents", {})
+    for name, variant in profile["agents"].items():
+        if name in agents and isinstance(agents[name], dict):
+            agents[name]["variant"] = variant
+        else:
+            print(f"[warn] agent '{name}' not found")
+
+    dump_json(FILES["opencode"], opencode)
+    dump_json(FILES["omop"], omop)
+    dump_json(FILES["claude"], claude)
+
+    for path in FILES.values():
+        try:
+            load_json(path)
+        except Exception as e:  # noqa: BLE001
+            print(f"[error] JSON validation failed for {path}: {e}")
+            return 1
+
+    print(f"Applied profile: {profile_name}")
+    print(f"Backups: {b1}, {b2}, {b3}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
